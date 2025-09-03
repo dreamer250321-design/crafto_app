@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Custom Post</title>
+  <link rel="stylesheet" href="style1.css">
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
+    canvas { border: 1px solid #ccc; margin-top: 20px; }
+    .btn { padding: 12px 20px; margin: 10px; border: none; background: red; color: white; font-size: 18px; cursor: pointer; border-radius: 8px; }
+    .btn:disabled { background: gray; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Create Your Custom Post</h2>
+
+    <input type="file" id="userPhoto">
+    <input type="text" id="userName" placeholder="Enter Your Name">
+
+    <canvas id="postCanvas" width="1200" height="1200"></canvas>
+
+    <!-- Razorpay Pay Button -->
+    <center><button class="btn" id="payAndDownload">Pay & Download</button></center>
+  </div>
+
+  <!-- Razorpay Checkout.js -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+  const canvas = document.getElementById("postCanvas");
+  const ctx = canvas.getContext("2d");
+
+  let uploadedPhoto = null;
+  let userName = "";
+
+  // Load template background
+  const template = new Image();
+  template.src = "images/template3.png"; // replace with your template
+  template.onload = () => drawTemplate();
+
+  function drawTemplate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(template, 0, 0, canvas.width, canvas.height);
+
+    // Red strip
+    const stripHeight = 120;
+    ctx.fillStyle = "red";
+    drawRoundedRect(ctx, 0, canvas.height - stripHeight, canvas.width, stripHeight, 60);
+
+    // Uploaded photo
+    if (uploadedPhoto) {
+      const size = 400;
+      const x = 800;
+      const y = 800;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.clip();
+      ctx.drawImage(uploadedPhoto, x, y, size, size);
+      ctx.restore();
+    }
+
+    // User name
+    if (userName) {
+      ctx.font = "bold 70px Arial";
+      ctx.fillStyle = "white";
+      ctx.textAlign = "center";
+      ctx.fillText(userName, canvas.width / 2, canvas.height - 40);
+    }
+  }
+
+  function drawRoundedRect(ctx, x, y, width, height, radius) {
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height - radius);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.lineTo(x + radius, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  document.getElementById("userName").addEventListener("input", function(e) {
+    userName = e.target.value;
+    drawTemplate();
+  });
+
+  document.getElementById("userPhoto").addEventListener("change", function(e) {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        uploadedPhoto = new Image();
+        uploadedPhoto.onload = () => drawTemplate();
+        uploadedPhoto.src = evt.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+
+  // 🔹 Razorpay Payment + Verification + Download
+  document.getElementById("payAndDownload").addEventListener("click", async function () {
+    try {
+      // 1. Ask backend to create order
+    // 1. Create order
+const orderRes = await fetch("http://192.168.1.11:5000/create-order", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ amount: 50 }) // amount in INR
+});
+
+      const orderData = await orderRes.json();
+
+      // 2. Open Razorpay Checkout
+      const options = {
+        "key": "rzp_test_RCgYGDZ5Qvvz2p", // ✅ must match backend key_id
+        "amount": orderData.amount,
+        "currency": orderData.currency,
+        "name": "Crafto Posts",
+        "description": "Download Custom Post",
+        "order_id": orderData.id,
+        "handler": async function (response) {
+          // Send response to backend for verification
+          const verifyRes = await fetch("http://192.168.1.11:5000/verify-payment", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(response)
+});
+
+          const verifyData = await verifyRes.json();
+          if (verifyData.success) {
+            alert("✅ Payment Verified!");
+            const link = document.createElement("a");
+            link.download = "custom_post.png";
+            link.href = canvas.toDataURL();
+            link.click();
+          } else {
+            alert("❌ Payment verification failed!");
+          }
+        },
+        "theme": { "color": "#F37254" }
+      };
+
+      const rzp = new Razorpay(options);
+      rzp.open();
+    } catch (err) {
+      console.error("Error:", err);
+    }
+  });
+</script>
+
+</body>
+</html>

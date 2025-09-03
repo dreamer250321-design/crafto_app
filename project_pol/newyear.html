@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Year Posts</title>
+ <link rel="stylesheet" href="style3.css">
+</head>
+<body>
+  <header>
+    🎆New Year Posts🎆
+  </header>
+
+  <section class="posts">           
+    <div class="post-card" onclick="openEditor('')">
+      <img src="images/template3.png" alt="Birthday Post 1">
+      <h3>new year  Template 1</h3>
+    </div>
+    <div class="post-card" onclick="openEditor('editor.html?template=2')">
+      <img src="images/birthday2.jpg" alt="Birthday Post 2">
+      <h3>mew year Template 2</h3>
+    </div>
+    <div class="post-card" onclick="openEditor('editor.html?template=3')">
+      <img src="images/birthday3.jpg" alt="Birthday Post 3">
+      <h3>new year Template 3</h3>
+    </div>
+  </section>
+
+  <script>
+    function openEditor(page){
+      window.location.href = page;
+    }
+  </script>
+</body>
+</html>
