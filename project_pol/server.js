@@ -1,3 +1,5 @@
+require("dotenv").config(); // Load environment variables
+
 const express = require("express");
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
@@ -7,35 +9,35 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// Razorpay Instance
+// ✅ Use environment variables for security
 const razorpay = new Razorpay({
-  key_id: "rzp_test_RCgYGDZ5Qvvz2p",   // your key_id
-  key_secret: "ToebIFnRGCPY1ISdlX0gEHB0" // your real key_secret
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET
 });
 
-// 1. Create Order
+// 🔹 Create Order
 app.post("/create-order", async (req, res) => {
   try {
     const options = {
       amount: req.body.amount * 100, // amount in paise
       currency: "INR",
-      receipt: "receipt_" + Date.now(),
+      receipt: "receipt_" + Date.now()
     };
     const order = await razorpay.orders.create(options);
     res.json(order);
   } catch (err) {
-    console.error(err);
+    console.error("Order creation error:", err);
     res.status(500).send("Error creating order");
   }
 });
 
-// 2. Verify Payment
+// 🔹 Verify Payment
 app.post("/verify-payment", (req, res) => {
   const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
 
   const sign = razorpay_order_id + "|" + razorpay_payment_id;
   const expectedSign = crypto
-    .createHmac("sha256", razorpay.key_secret)
+    .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
     .update(sign)
     .digest("hex");
 
@@ -46,5 +48,6 @@ app.post("/verify-payment", (req, res) => {
   }
 });
 
-// Start Server
-app.listen(5000, () => console.log("Server running on http://localhost:5000"));
+// 🔹 Start Server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
