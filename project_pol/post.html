@@ -109,7 +109,7 @@
     try {
       // 1. Ask backend to create order
     // 1. Create order
-const orderRes = await fetch("http://192.168.1.11:5000/create-order", {
+const orderRes = await fetch("https://crafto-app-1.onrender.com/create-order", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ amount: 50 }) // amount in INR
@@ -127,7 +127,7 @@ const orderRes = await fetch("http://192.168.1.11:5000/create-order", {
         "order_id": orderData.id,
         "handler": async function (response) {
           // Send response to backend for verification
-          const verifyRes = await fetch("http://192.168.1.11:5000/verify-payment", {
+          const verifyRes = await fetch("https://crafto-app-1.onrender.com/verify-payment", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify(response)
