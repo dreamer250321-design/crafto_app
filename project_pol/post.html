@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Create Custom Post</title>
   <link rel="stylesheet" href="style1.css">
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <style>
     body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
     canvas { border: 1px solid #ccc; margin-top: 20px; }
@@ -21,12 +22,9 @@
 
     <canvas id="postCanvas" width="1200" height="1200"></canvas>
 
-    <!-- Razorpay Pay Button -->
     <center><button class="btn" id="payAndDownload">Pay & Download</button></center>
   </div>
 
-  <!-- Razorpay Checkout.js -->
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
   const canvas = document.getElementById("postCanvas");
   const ctx = canvas.getContext("2d");
@@ -34,21 +32,18 @@
   let uploadedPhoto = null;
   let userName = "";
 
-  // Load template background
   const template = new Image();
-  template.src = "images/template3.png"; // replace with your template
+  template.src = "images/template3.png";
   template.onload = () => drawTemplate();
 
   function drawTemplate() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(template, 0, 0, canvas.width, canvas.height);
 
-    // Red strip
     const stripHeight = 120;
     ctx.fillStyle = "red";
     drawRoundedRect(ctx, 0, canvas.height - stripHeight, canvas.width, stripHeight, 60);
 
-    // Uploaded photo
     if (uploadedPhoto) {
       const size = 400;
       const x = 800;
@@ -62,7 +57,6 @@
       ctx.restore();
     }
 
-    // User name
     if (userName) {
       ctx.font = "bold 70px Arial";
       ctx.fillStyle = "white";
@@ -104,34 +98,46 @@
     }
   });
 
-  // 🔹 Razorpay Payment + Verification + Download
-  document.getElementById("payAndDownload").addEventListener("click", async function () {
+  document.getElementById("payAndDownload").addEventListener("click", async function (event) {
+    event.preventDefault();
+
     try {
-      // 1. Ask backend to create order
-    // 1. Create order
-const orderRes = await fetch("https://crafto-app-1.onrender.com/create-order", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ amount: 50 }) // amount in INR
-});
+      const orderRes = await fetch("https://crafto-app-1.onrender.com/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: 50 })
+      });
+
+      if (!orderRes.ok) {
+        throw new Error("Failed to fetch order. Status: " + orderRes.status);
+      }
 
       const orderData = await orderRes.json();
-console.log("Order Data:", orderData);
-      // 2. Open Razorpay Checkout
+      console.log("Order Data:", orderData);
+
+      if (!orderData.id) {
+        alert("❌ Order ID missing. Check backend response.");
+        return;
+      }
+
       const options = {
-        "key": "rzp_test_RCgYGDZ5Qvvz2p", // ✅ must match backend key_id
-        "amount": orderData.amount,
-        "currency": orderData.currency,
-        "name": "Crafto Posts",
-        "description": "Download Custom Post",
-        "order_id": orderData.id,
-        "handler": async function (response) {
-          // Send response to backend for verification
+        key: "rzp_test_RCgYGDZ5Qvvz2p",
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "Crafto Posts",
+        description: "Download Custom Post",
+        order_id: orderData.id,
+        prefill: {
+          name: userName || "Guest",
+          email: "test@example.com",
+          contact: "9999999999"
+        },
+        handler: async function (response) {
           const verifyRes = await fetch("https://crafto-app-1.onrender.com/verify-payment", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify(response)
-});
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(response)
+          });
 
           const verifyData = await verifyRes.json();
           if (verifyData.success) {
@@ -144,16 +150,25 @@ console.log("Order Data:", orderData);
             alert("❌ Payment verification failed!");
           }
         },
-        "theme": { "color": "#F37254" }
+        modal: {
+          ondismiss: function () {
+            console.log("Razorpay popup closed by user.");
+          }
+        },
+        theme: { color: "#F37254" }
       };
-if (!orderData.id) {
-  alert("❌ Order ID missing. Check backend response.");
-  return;
-}
+
+      console.log("Razorpay Options:", options);
       const rzp = new Razorpay(options);
-      rzp.open();
+      if (rzp) {
+        rzp.open();
+      } else {
+        throw new Error("Razorpay failed to initialize.");
+      }
+
     } catch (err) {
       console.error("Error:", err);
+      alert("❌ Something went wrong. Check console for details.");
     }
   });
 </script>
