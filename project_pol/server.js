@@ -11,8 +11,8 @@ app.use(cors());
 
 // ✅ Use environment variables for security
 const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET
+  key_id: process.env.rzp_test_RCgYGDZ5Qvvz2p,
+  key_secret: process.env.ToebIFnRGCPY1ISdlX0gEHB0
 });
 
 // 🔹 Create Order

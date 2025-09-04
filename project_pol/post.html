@@ -116,7 +116,7 @@ const orderRes = await fetch("https://crafto-app-1.onrender.com/create-order", {
 });
 
       const orderData = await orderRes.json();
-
+console.log("Order Data:", orderData);
       // 2. Open Razorpay Checkout
       const options = {
         "key": "rzp_test_RCgYGDZ5Qvvz2p", // ✅ must match backend key_id
@@ -146,7 +146,10 @@ const orderRes = await fetch("https://crafto-app-1.onrender.com/create-order", {
         },
         "theme": { "color": "#F37254" }
       };
-
+if (!orderData.id) {
+  alert("❌ Order ID missing. Check backend response.");
+  return;
+}
       const rzp = new Razorpay(options);
       rzp.open();
     } catch (err) {
